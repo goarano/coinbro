@@ -1,39 +1,6 @@
 use reqwest::{Error, IntoUrl};
+use crate::cryptowatch::data::*;
 use serde_json::Value;
-
-#[derive(Deserialize, Debug)]
-struct Allowance {
-    cost: usize,
-    remaining: usize,
-}
-
-#[derive(Deserialize, Debug)]
-struct CryptowatchResponse {
-    result: Value,
-    allowance: Allowance,
-}
-
-#[derive(Deserialize, Debug)]
-struct MarketPriceChange {
-    percentage: f32,
-    absolute: f32,
-}
-
-#[derive(Deserialize, Debug)]
-struct MarketPrice {
-    last: f32,
-    high: f32,
-    low: f32,
-    change: MarketPriceChange,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct MarketSummary {
-    price: MarketPrice,
-    volume: usize,
-    volume_quote: Option<f32>,
-}
 
 fn crypto_request<T: IntoUrl>(url: T) -> Result<CryptowatchResponse, Error> {
     let mut response = reqwest::get(url)?;

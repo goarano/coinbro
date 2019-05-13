@@ -1,4 +1,4 @@
-use crate::cryptowatch::summaries;
+use crate::cryptowatch::rest::summaries;
 use prettytable::{Cell, Row, Table};
 
 pub fn run() {
