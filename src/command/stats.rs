@@ -2,7 +2,7 @@ use crate::cryptowatch::rest::market_summaries;
 use prettytable::{Cell, Row, Table};
 
 pub fn run() {
-    let summaries = market_summaries().unwrap();
+    let _summaries = market_summaries().unwrap();
 
     // Create the table
     let mut table = Table::new();

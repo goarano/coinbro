@@ -1,10 +1,8 @@
 use crate::cryptowatch::data::*;
+use itertools::Itertools;
 use reqwest::{Error, IntoUrl};
 use serde_json::{Map, Value};
-// Needed for Market::iter()
-use itertools::Itertools;
 use std::collections::HashMap;
-use strum::IntoEnumIterator;
 
 fn crypto_request<T: IntoUrl>(url: T) -> Result<CryptowatchResponse, Error> {
     let mut response = reqwest::get(url)?;
@@ -39,7 +37,6 @@ pub fn market_summaries() -> Result<Value, Error> {
                 }
                 _ => {
                     panic!("This is not good");
-                    None
                 }
             }
         })
@@ -58,6 +55,16 @@ pub fn market_summaries() -> Result<Value, Error> {
         .unique()
         .collect();
     println!("{:?}", pairs);
+
+    let mut market_pair_map: HashMap<&str, HashMap<&str, MarketSummary>> = HashMap::new();
+    market_pairs
+        .into_iter()
+        .for_each(|(market, pair, summary)| {
+            market_pair_map
+                .entry(market)
+                .or_insert(HashMap::new())
+                .insert(pair, summary);
+        });
 
     Ok(response.result)
 }
