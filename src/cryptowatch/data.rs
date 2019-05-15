@@ -33,3 +33,13 @@ pub struct MarketSummary {
     pub volume: usize,
     pub volume_quote: Option<f32>,
 }
+
+#[derive(EnumString, EnumIter, Display, Debug)]
+pub enum Market {
+    #[strum(serialize="binance")]
+    Binance,
+    #[strum(serialize="bitfinex")]
+    Bitfinex,
+    #[strum(serialize="kraken")]
+    Kraken
+}

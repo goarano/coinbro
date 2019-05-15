@@ -10,6 +10,12 @@ extern crate tokio_core;
 #[macro_use]
 extern crate prettytable;
 
+extern crate strum;
+#[macro_use]
+extern crate strum_macros;
+
+extern crate itertools;
+
 mod cli;
 mod command;
 mod cryptowatch;
