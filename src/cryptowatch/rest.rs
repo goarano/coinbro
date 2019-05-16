@@ -2,7 +2,7 @@ use crate::cryptowatch::data::*;
 use itertools::Itertools;
 use reqwest::{Error, IntoUrl};
 use serde_json::{Map, Value};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 fn crypto_request<T: IntoUrl>(url: T) -> Result<CryptowatchResponse, Error> {
     let mut response = reqwest::get(url)?;
@@ -42,18 +42,12 @@ pub fn market_summaries() -> Result<HashMap<String, HashMap<String, MarketSummar
         })
         .collect();
 
-    let markets: Vec<_> = market_pairs
+    let (markets, pairs): (HashSet<_>, HashSet<_>) = market_pairs
         .iter()
-        .map(|(market, _, _)| market)
-        .unique()
-        .collect();
-    println!("{:?}", markets);
+        .map(|(m, p, _)| (m.clone(), p.clone()))
+        .unzip();
 
-    let pairs: Vec<_> = market_pairs
-        .iter()
-        .map(|(_, pair, _)| pair)
-        .unique()
-        .collect();
+    println!("{:?}", markets);
     println!("{:?}", pairs);
 
     let mut market_pair_map: HashMap<String, HashMap<String, MarketSummary>> = HashMap::new();
