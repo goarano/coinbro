@@ -1,5 +1,5 @@
 use crate::cryptowatch::data::MarketSummary;
-use prettytable::{Cell, Row, Table};
+use prettytable::Table;
 
 pub fn output_summary_table(summaries: &[&MarketSummary]) {
     // Create the table

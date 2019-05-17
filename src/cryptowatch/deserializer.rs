@@ -1,12 +1,12 @@
 use crate::cryptowatch::data::*;
-use crate::cryptowatch::errors::{Error, ErrorKind};
+use crate::cryptowatch::errors::{ErrorKind, Result};
 use itertools::Itertools;
 use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
 
 pub fn deserialize_market_summaries(
     response: CryptowatchResponse,
-) -> Result<HashMap<String, HashMap<String, MarketSummary>>, Error> {
+) -> Result<HashMap<String, HashMap<String, MarketSummary>>> {
     let mut response_map: Map<String, Value> = response
         .result
         .as_object()
@@ -16,28 +16,32 @@ pub fn deserialize_market_summaries(
     let keys_strings: Vec<String> = response_map.keys().cloned().collect();
     let keys: Vec<String> = keys_strings.iter().map(ToOwned::to_owned).collect();
 
-    let market_pairs: Vec<(String, String, MarketSummary)> = keys
+    let market_pairs_res: Result<Vec<(String, String, MarketSummary)>> = keys
         .into_iter()
-        .filter_map(|k| {
-            response_map
-                .remove(&k)
-                .and_then(|v| serde_json::from_value(v).ok())
-                .map(|v: MarketSummary| (k, v))
+        .map(|key| {
+            response_map.remove(&key).map_or(
+                Err(ErrorKind::Msg(String::from("Couldn't find key")).into()),
+                |value| {
+                    let summary: MarketSummary = serde_json::from_value(value)?;
+                    Ok((key, summary))
+                },
+            )
         })
-        .filter_map(|(k, v)| {
-            let mut market_pair: Vec<&str> = k.split(":").collect();
+        .map(|result: Result<(String, MarketSummary)>| {
+            let (key, summary) = result?;
+            let mut market_pair: Vec<&str> = key.split(":").collect();
             match market_pair.len() {
                 2 => {
                     let market = market_pair.remove(0).to_owned();
                     let pair = market_pair.remove(0).to_owned();
-                    Some((market, pair, v))
+                    println!("filter_map {} {}", &market, &pair);
+                    Ok((market, pair, summary))
                 }
-                _ => {
-                    panic!("This is not good");
-                }
+                _ => Err(ErrorKind::Msg(String::from("unknown error")).into()),
             }
         })
         .collect();
+    let market_pairs = market_pairs_res?;
 
     let (markets, pairs): (HashSet<_>, HashSet<_>) = market_pairs
         .iter()
@@ -66,7 +70,7 @@ mod test {
 
     #[test]
     fn test_deserialize_market_summaries() {
-        let summary: Value = serde_json::from_str(
+        let response: CryptowatchResponse = serde_json::from_str(
             "{
                 \"result\": {
                     \"binance:adabnb\": {
@@ -103,16 +107,9 @@ mod test {
             }",
         )
         .unwrap();
-        let response = CryptowatchResponse {
-            result: summary,
-            allowance: Allowance {
-                cost: 0,
-                remaining: 0,
-            },
-        };
 
         let summaries_res = deserialize_market_summaries(response);
-        assert!(summaries_res.is_ok());
+        assert!(summaries_res.is_ok(), format!("{:?}", summaries_res));
 
         let summaries = summaries_res.unwrap();
 

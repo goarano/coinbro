@@ -1,10 +1,7 @@
 use crate::cryptowatch::client::Cryptowatch;
-use crate::cryptowatch::data::MarketSummary;
 use crate::errors::{Error, ErrorKind, Result};
 use crate::output::output_summary_table;
 use itertools::Itertools;
-use prettytable::{Cell, Row, Table};
-use std::collections::HashMap;
 
 pub fn run() -> Result<()> {
     let client = Cryptowatch::new();

@@ -30,7 +30,7 @@ pub struct MarketPrice {
 #[serde(rename_all = "camelCase")]
 pub struct MarketSummary {
     pub price: MarketPrice,
-    pub volume: usize,
+    pub volume: f32,
     pub volume_quote: Option<f32>,
 }
 
