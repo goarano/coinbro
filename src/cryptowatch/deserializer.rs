@@ -34,7 +34,6 @@ pub fn deserialize_market_summaries(
                 2 => {
                     let market = market_pair.remove(0).to_owned();
                     let pair = market_pair.remove(0).to_owned();
-                    println!("filter_map {} {}", &market, &pair);
                     Ok((market, pair, summary))
                 }
                 _ => Err(ErrorKind::ParseError(format!(
