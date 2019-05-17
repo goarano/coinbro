@@ -36,10 +36,10 @@ pub struct MarketSummary {
 
 #[derive(EnumString, EnumIter, Display, Debug)]
 pub enum Market {
-    #[strum(serialize="binance")]
+    #[strum(serialize = "binance")]
     Binance,
-    #[strum(serialize="bitfinex")]
+    #[strum(serialize = "bitfinex")]
     Bitfinex,
-    #[strum(serialize="kraken")]
-    Kraken
+    #[strum(serialize = "kraken")]
+    Kraken,
 }
