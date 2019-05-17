@@ -13,19 +13,18 @@ pub fn deserialize_market_summaries(
         .ok_or(ErrorKind::ParseError(String::from("something went wrong")))?
         .to_owned();
 
-    let keys_strings: Vec<String> = response_map.keys().cloned().collect();
-    let keys: Vec<String> = keys_strings.iter().map(ToOwned::to_owned).collect();
+    let keys: Vec<String> = response_map.keys().cloned().collect();
 
     let market_pairs_res: Result<Vec<(String, String, MarketSummary)>> = keys
         .into_iter()
         .map(|key| {
-            response_map.remove(&key).map_or(
-                Err(ErrorKind::Msg(String::from("Couldn't find key")).into()),
-                |value| {
+            response_map
+                .remove(&key)
+                .map(|value| {
                     let summary: MarketSummary = serde_json::from_value(value)?;
                     Ok((key, summary))
-                },
-            )
+                })
+                .unwrap()
         })
         .map(|result: Result<(String, MarketSummary)>| {
             let (key, summary) = result?;
