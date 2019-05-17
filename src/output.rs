@@ -1,4 +1,5 @@
 use crate::cryptowatch::data::MarketSummary;
+use colored::Colorize;
 use prettytable::Table;
 
 pub fn output_summary_table(summaries: &[&MarketSummary]) {
@@ -30,12 +31,25 @@ pub fn output_summary_table(summaries: &[&MarketSummary]) {
             price.last,
             price.high,
             price.low,
-            price.change.absolute,
-            price.change.percentage,
+            color_number(price.change.absolute),
+            color_number(price.change.percentage),
             volume,
             volume_quote
         ]);
     });
 
     table.printstd();
+}
+
+fn color_number<N>(number: N) -> String
+where
+    N: Into<f64> + ToString + Copy,
+{
+    if number.into() < 0.0 {
+        number.to_string().red().to_string()
+    } else if number.into() > 0.0 {
+        number.to_string().green().to_string()
+    } else {
+        String::new()
+    }
 }

@@ -18,6 +18,8 @@ extern crate itertools;
 #[macro_use]
 extern crate error_chain;
 
+extern crate colored;
+
 use clap::ArgMatches;
 
 mod cli;
