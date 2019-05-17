@@ -13,9 +13,10 @@ pub fn deserialize_market_summaries(
         .ok_or(ErrorKind::ParseError(String::from("something went wrong")))?
         .to_owned();
 
-    let keys: Vec<String> = response_map.keys().cloned().collect();
-
-    let market_pairs_res: Result<Vec<(String, String, MarketSummary)>> = keys
+    let market_pairs_res: Result<Vec<(String, String, MarketSummary)>> = response_map
+        .keys()
+        .cloned()
+        .collect_vec()
         .into_iter()
         .map(|key| {
             response_map
@@ -36,7 +37,11 @@ pub fn deserialize_market_summaries(
                     println!("filter_map {} {}", &market, &pair);
                     Ok((market, pair, summary))
                 }
-                _ => Err(ErrorKind::Msg(String::from("unknown error")).into()),
+                _ => Err(ErrorKind::ParseError(format!(
+                    "cannot parse market pair {:?}",
+                    market_pair
+                ))
+                .into()),
             }
         })
         .collect();
