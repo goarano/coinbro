@@ -1,9 +1,13 @@
 use crate::cryptowatch::client::Cryptowatch;
+use crate::errors::{Error, ErrorKind, Result};
 use prettytable::{Cell, Row, Table};
 
-pub fn run() {
+pub fn run() -> Result<()> {
     let client = Cryptowatch::new();
-    let _summaries = client.market_summaries();
+    let summaries = client.market_summaries()?;
+    let kraken = summaries
+        .get("kraken")
+        .ok_or::<Error>(ErrorKind::Msg(String::from("kraken not found")).into())?;
 
     // Create the table
     let mut table = Table::new();
@@ -20,4 +24,5 @@ pub fn run() {
 
     // Print the table to stdout
     table.printstd();
+    Ok(())
 }

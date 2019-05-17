@@ -1,5 +1,5 @@
 use crate::cryptowatch::data::MarketSummary;
-use crate::cryptowatch::deserializer::market_summaries;
+use crate::cryptowatch::deserializer::deserialize_market_summaries;
 use crate::cryptowatch::errors::Error;
 use crate::cryptowatch::rest::cryptowatch_get;
 use std::cell::RefCell;
@@ -36,6 +36,6 @@ impl Cryptowatch {
             "previous remaining allowance: {}",
             previous_remaining_allowance
         );
-        market_summaries(response)
+        deserialize_market_summaries(response)
     }
 }

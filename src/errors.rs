@@ -1,4 +1,10 @@
+use crate::cryptowatch;
+
 error_chain! {
+    links {
+        Cryptowatch(cryptowatch::errors::Error, cryptowatch::errors::ErrorKind);
+    }
+
     foreign_links {
         Fmt(::std::fmt::Error);
         Io(::std::io::Error);

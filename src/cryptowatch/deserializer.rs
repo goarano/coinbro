@@ -3,7 +3,7 @@ use crate::cryptowatch::errors::{Error, ErrorKind};
 use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
 
-pub fn market_summaries(
+pub fn deserialize_market_summaries(
     response: CryptowatchResponse,
 ) -> Result<HashMap<String, HashMap<String, MarketSummary>>, Error> {
     let mut response_map: Map<String, Value> = response

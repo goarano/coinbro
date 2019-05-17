@@ -18,19 +18,31 @@ extern crate itertools;
 #[macro_use]
 extern crate error_chain;
 
+use clap::ArgMatches;
+
 mod cli;
 mod command;
 mod cryptowatch;
+mod errors;
+
+use errors::Result;
 
 fn main() {
     let matches = cli::build_cli().get_matches();
+    match run(matches) {
+        Ok(_) => println!("Bye!"),
+        Err(err) => println!("error ocurred: {}", err),
+    }
+}
+
+fn run(matches: ArgMatches) -> Result<()> {
     match matches.subcommand() {
         ("stats", Some(_arg_matches)) => {
             //let summaries = cryptowatch::summaries().unwrap();
-            command::stats::run();
+            command::stats::run()
             //println!("{}", summaries);
         }
-        ("", None) => println!("No command given"),
+        ("", None) => bail!("No command given"),
         _ => unreachable!(),
     }
 }
