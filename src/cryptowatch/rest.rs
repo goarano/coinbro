@@ -7,6 +7,5 @@ where
 {
     let mut response = reqwest::get(url)?;
     let res_json: CryptowatchResponse = response.json().unwrap();
-    println!("{:?}", res_json);
     Ok(res_json)
 }

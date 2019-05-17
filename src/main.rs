@@ -24,6 +24,7 @@ mod cli;
 mod command;
 mod cryptowatch;
 mod errors;
+mod output;
 
 use errors::Result;
 

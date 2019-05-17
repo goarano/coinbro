@@ -1,5 +1,6 @@
 use crate::cryptowatch::data::*;
 use crate::cryptowatch::errors::{Error, ErrorKind};
+use itertools::Itertools;
 use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
 
@@ -43,8 +44,8 @@ pub fn deserialize_market_summaries(
         .map(|(m, p, _)| (m.clone(), p.clone()))
         .unzip();
 
-    println!("{:?}", markets);
-    println!("{:?}", pairs);
+    println!("{:?}", markets.iter().sorted().collect::<Vec<_>>());
+    println!("{:?}", pairs.iter().sorted().collect::<Vec<_>>());
 
     let mut market_pair_map: HashMap<String, HashMap<String, MarketSummary>> = HashMap::new();
     market_pairs
@@ -57,4 +58,69 @@ pub fn deserialize_market_summaries(
         });
 
     Ok(market_pair_map)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_deserialize_market_summaries() {
+        let summary: Value = serde_json::from_str(
+            "{
+                \"result\": {
+                    \"binance:adabnb\": {
+                        \"price\": {
+                            \"last\": 0.00318,
+                            \"high\": 0.00357,
+                            \"low\": 0.00305,
+                            \"change\": {
+                                \"percentage\": -0.05357143,
+                                \"absolute\": -0.00018
+                            }
+                        },
+                        \"volume\": 18708919.5,
+                        \"volumeQuote\": 61375.854008
+                    },
+                    \"binance:adabtc\": {
+                        \"price\": {
+                            \"last\": 0.00001107,
+                            \"high\": 0.00001178,
+                            \"low\": 0.00001051,
+                            \"change\": {
+                                \"percentage\": 0.009107468,
+                                \"absolute\": 1e-7
+                            }
+                        },
+                        \"volume\": 315125414,
+                        \"volumeQuote\": 3491.26739894
+                    }
+                },
+                \"allowance\": {
+                    \"cost\": 81720081,
+                    \"remaining\": 7726941362
+                }
+            }",
+        )
+        .unwrap();
+        let response = CryptowatchResponse {
+            result: summary,
+            allowance: Allowance {
+                cost: 0,
+                remaining: 0,
+            },
+        };
+
+        let summaries_res = deserialize_market_summaries(response);
+        assert!(summaries_res.is_ok());
+
+        let summaries = summaries_res.unwrap();
+
+        assert_eq!(summaries.keys().len(), 1);
+        assert!(summaries.contains_key("binance"));
+
+        let binance = summaries.get("binance").unwrap();
+        assert_eq!(binance.keys().len(), 2);
+        assert!(binance.contains_key("adabtc"));
+    }
 }

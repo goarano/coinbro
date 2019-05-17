@@ -1,28 +1,24 @@
 use crate::cryptowatch::client::Cryptowatch;
+use crate::cryptowatch::data::MarketSummary;
 use crate::errors::{Error, ErrorKind, Result};
+use crate::output::output_summary_table;
+use itertools::Itertools;
 use prettytable::{Cell, Row, Table};
+use std::collections::HashMap;
 
 pub fn run() -> Result<()> {
     let client = Cryptowatch::new();
     let summaries = client.market_summaries()?;
+    let exchange = "kraken";
     let kraken = summaries
-        .get("kraken")
-        .ok_or::<Error>(ErrorKind::Msg(String::from("kraken not found")).into())?;
+        .get(exchange)
+        .ok_or::<Error>(ErrorKind::ExchangeNotFound(String::from(exchange)).into())?;
+    println!("{:?}", kraken.keys().sorted().collect::<Vec<_>>());
+    let pair = "ethusd";
+    let summary = kraken
+        .get(pair)
+        .ok_or::<Error>(ErrorKind::PairNotFound(String::from(pair)).into())?;
 
-    // Create the table
-    let mut table = Table::new();
-
-    // Add a row per time
-    table.add_row(row!["ABC", "DEFG", "HIJKLMN"]);
-    table.add_row(row!["foobar", "bar", "foo"]);
-    // A more complicated way to add a row:
-    table.add_row(Row::new(vec![
-        Cell::new("foobar2"),
-        Cell::new("bar2"),
-        Cell::new("foo2"),
-    ]));
-
-    // Print the table to stdout
-    table.printstd();
+    output_summary_table(&vec![summary]);
     Ok(())
 }
