@@ -1,12 +1,16 @@
 use crate::cryptowatch::data::*;
-use reqwest::Error;
+use crate::cryptowatch::errors::{Error, ErrorKind};
 use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
 
 pub fn market_summaries(
     response: CryptowatchResponse,
 ) -> Result<HashMap<String, HashMap<String, MarketSummary>>, Error> {
-    let mut response_map: Map<String, Value> = response.result.as_object().unwrap().to_owned();
+    let mut response_map: Map<String, Value> = response
+        .result
+        .as_object()
+        .ok_or(ErrorKind::ParseError(String::from("something went wrong")))?
+        .to_owned();
 
     let keys_strings: Vec<String> = response_map.keys().cloned().collect();
     let keys: Vec<String> = keys_strings.iter().map(ToOwned::to_owned).collect();

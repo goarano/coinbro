@@ -15,6 +15,8 @@ extern crate strum;
 extern crate strum_macros;
 
 extern crate itertools;
+#[macro_use]
+extern crate error_chain;
 
 mod cli;
 mod command;

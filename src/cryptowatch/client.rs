@@ -1,7 +1,7 @@
 use crate::cryptowatch::data::MarketSummary;
 use crate::cryptowatch::deserializer::market_summaries;
+use crate::cryptowatch::errors::Error;
 use crate::cryptowatch::rest::cryptowatch_get;
-use reqwest::Error;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
