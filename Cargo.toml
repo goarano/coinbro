@@ -18,3 +18,4 @@ strum_macros = "~0.15"
 itertools = "~0.8"
 error-chain = "~0.12"
 colored = "1.8"
+log = { version = "~0.4", features = ["std", "serde"] }

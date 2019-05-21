@@ -19,6 +19,8 @@ extern crate itertools;
 extern crate error_chain;
 
 extern crate colored;
+#[macro_use]
+extern crate log;
 
 use clap::ArgMatches;
 

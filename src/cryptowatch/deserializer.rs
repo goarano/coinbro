@@ -51,8 +51,8 @@ pub fn deserialize_market_summaries(
         .map(|(m, p, _)| (m.clone(), p.clone()))
         .unzip();
 
-    println!("{:?}", markets.iter().sorted().collect::<Vec<_>>());
-    println!("{:?}", pairs.iter().sorted().collect::<Vec<_>>());
+    debug!("markets: {:?}", markets.iter().sorted().collect::<Vec<_>>());
+    debug!("pairs: {:?}", pairs.iter().sorted().collect::<Vec<_>>());
 
     let mut market_pair_map: HashMap<String, HashMap<String, MarketSummary>> = HashMap::new();
     market_pairs
