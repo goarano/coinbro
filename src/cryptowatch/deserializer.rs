@@ -67,6 +67,10 @@ pub fn deserialize_market_summaries(
     Ok(market_pair_map)
 }
 
+pub fn deserialize_market_summary(response: CryptowatchResponse) -> Result<MarketSummary> {
+    serde_json::from_value(response.result).map_err(|e| e.into())
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -122,5 +126,37 @@ mod test {
         let binance = summaries.get("binance").unwrap();
         assert_eq!(binance.keys().len(), 2);
         assert!(binance.contains_key("adabtc"));
+    }
+
+    #[test]
+    fn test_deserialize_market_summary() {
+        let response: CryptowatchResponse = serde_json::from_str(
+            "{
+                \"result\": {
+                    \"price\": {
+                        \"last\": 0.00318,
+                        \"high\": 0.00357,
+                        \"low\": 0.00305,
+                        \"change\": {
+                            \"percentage\": -0.05357143,
+                            \"absolute\": -0.00018
+                        }
+                    },
+                    \"volume\": 18708919.5,
+                    \"volumeQuote\": 61375.854008
+                },
+                \"allowance\": {
+                    \"cost\": 81720081,
+                    \"remaining\": 7726941362
+                }
+            }",
+        )
+        .unwrap();
+
+        let summaries_res = deserialize_market_summary(response);
+        assert!(summaries_res.is_ok(), format!("{:?}", summaries_res));
+
+        let summary = summaries_res.unwrap();
+        assert_eq!(summary.volume, 18708919.5);
     }
 }

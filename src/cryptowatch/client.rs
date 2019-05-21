@@ -1,5 +1,5 @@
 use crate::cryptowatch::data::MarketSummary;
-use crate::cryptowatch::deserializer::deserialize_market_summaries;
+use crate::cryptowatch::deserializer::{deserialize_market_summaries, deserialize_market_summary};
 use crate::cryptowatch::errors::Error;
 use crate::cryptowatch::rest::cryptowatch_get;
 use std::cell::RefCell;
@@ -24,18 +24,34 @@ impl Cryptowatch {
         format!("https://api.cryptowat.ch/{}", endpoint.as_ref())
     }
 
+    fn set_allowance(&self, remaining_allowance: usize) {
+        let previous_remaining_allowance = self.remaining_allowance.replace(remaining_allowance);
+        println!(
+            "previous remaining allowance: {}",
+            previous_remaining_allowance
+        );
+    }
+
+    pub fn market_summary<T>(&self, market: T, pair: T) -> Result<MarketSummary, Error>
+    where
+        T: AsRef<str>,
+    {
+        let url_str = self.url_builder(format!(
+            "markets/{}/{}/summary",
+            market.as_ref(),
+            pair.as_ref()
+        ));
+        let response = cryptowatch_get(&url_str)?;
+        self.set_allowance(response.allowance.remaining);
+        deserialize_market_summary(response)
+    }
+
     pub fn market_summaries(
         &self,
     ) -> Result<HashMap<String, HashMap<String, MarketSummary>>, Error> {
         let url_str = self.url_builder("markets/summaries");
         let response = cryptowatch_get(&url_str)?;
-        let previous_remaining_allowance = self
-            .remaining_allowance
-            .replace(response.allowance.remaining);
-        println!(
-            "previous remaining allowance: {}",
-            previous_remaining_allowance
-        );
+        self.set_allowance(response.allowance.remaining);
         deserialize_market_summaries(response)
     }
 }
