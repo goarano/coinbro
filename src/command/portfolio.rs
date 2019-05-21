@@ -1,8 +1,8 @@
-use crate::cryptowatch::client::Cryptowatch;
-use crate::errors::{Error, ErrorKind, Result};
-use crate::output::output_summary_table;
+use crate::command::portfolio_config::PortfolioConfig;
+use crate::errors::{ErrorKind, Result};
 use dirs::config_dir;
-use itertools::Itertools;
+use std::fs::File;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 pub const PORTFOLIO_CONFIG_FILE_NAME: &str = "coinbro.json";
@@ -22,7 +22,6 @@ where
             .map(PathBuf::from)
             .expect("No config dir found for this OS"),
     );
-
     if !portfolio_config_file.exists() || !portfolio_config_file.is_file() {
         bail!(ErrorKind::ConfigFileNotFound(
             portfolio_config_file
@@ -31,6 +30,11 @@ where
                 .unwrap_or(String::from("cannot read config file path"))
         ));
     }
+
+    let mut file = File::open(portfolio_config_file)?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+    let portfolio_config: PortfolioConfig = serde_json::from_str(&contents)?;
 
     Ok(())
 }

@@ -5,6 +5,11 @@ error_chain! {
         Cryptowatch(cryptowatch::errors::Error, cryptowatch::errors::ErrorKind);
     }
 
+    foreign_links {
+        Io(::std::io::Error);
+        SerdeError(serde_json::error::Error);
+    }
+
     errors {
         ExchangeNotFound(exchange: String) {
             description("exchange not found"),
