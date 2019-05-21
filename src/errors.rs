@@ -15,5 +15,10 @@ error_chain! {
             description("pair not found"),
             display("pair not found: {}", pair),
         }
+
+        ConfigFileNotFound(file: String) {
+            description("config file not found"),
+            display("config file not found: {}", file)
+        }
     }
 }

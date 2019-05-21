@@ -21,6 +21,7 @@ extern crate error_chain;
 extern crate colored;
 #[macro_use]
 extern crate log;
+extern crate dirs;
 
 use clap::ArgMatches;
 
@@ -42,10 +43,16 @@ fn main() {
 
 fn run(matches: ArgMatches) -> Result<()> {
     match matches.subcommand() {
-        ("stats", Some(_arg_matches)) => {
+        (cli::STATS_ARG, Some(_arg_matches)) => {
             //let summaries = cryptowatch::summaries().unwrap();
             command::stats::run()
             //println!("{}", summaries);
+        }
+        (cli::PORTFOLIO_ARG, Some(arg_matches)) => {
+            let config_file = arg_matches
+                .value_of(cli::PORTFOLIO_CONFIG_ARG)
+                .map(ToOwned::to_owned);
+            command::portfolio::run(config_file)
         }
         ("", None) => bail!("No command given"),
         _ => unreachable!(),
