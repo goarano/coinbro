@@ -5,7 +5,8 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-pub const PORTFOLIO_CONFIG_FILE_NAME: &str = "coinbro.json";
+pub const PORTFOLIO_CONFIG_FILE_DIR: &str = "coinbro";
+pub const PORTFOLIO_CONFIG_FILE_NAME: &str = "config.json";
 
 pub fn run<P>(config_file: P) -> Result<()>
 where
@@ -14,7 +15,8 @@ where
     let portfolio_config_file = config_file.into().map(PathBuf::from).unwrap_or(
         config_dir()
             .and_then(|p| {
-                p.join(Path::new(PORTFOLIO_CONFIG_FILE_NAME))
+                p.join(Path::new(PORTFOLIO_CONFIG_FILE_DIR))
+                    .join(Path::new(PORTFOLIO_CONFIG_FILE_NAME))
                     .into_os_string()
                     .into_string()
                     .ok()

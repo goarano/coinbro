@@ -24,6 +24,7 @@ extern crate log;
 extern crate dirs;
 
 use clap::ArgMatches;
+use colored::Colorize;
 
 mod cli;
 mod command;
@@ -36,8 +37,8 @@ use errors::Result;
 fn main() {
     let matches = cli::build_cli().get_matches();
     match run(matches) {
-        Ok(_) => println!("Bye!"),
-        Err(err) => println!("error ocurred: {}", err),
+        Ok(_) => println!("{}", "Bye!".green()),
+        Err(err) => println!("{}", format!("{}", err).red()),
     }
 }
 

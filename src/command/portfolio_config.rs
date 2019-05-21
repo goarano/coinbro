@@ -22,6 +22,7 @@ pub struct PortfolioEntry {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct PortfolioConfig {
     /// desired currency by the user
     #[serde(default = Fiat::CHF)]
