@@ -1,5 +1,8 @@
 use crate::command::portfolio_config::PortfolioConfig;
-use crate::errors::{ErrorKind, Result};
+use crate::cryptowatch::client::Cryptowatch;
+use crate::cryptowatch::data::MarketSummary;
+use crate::errors::{Error, ErrorKind, Result};
+use crate::output::output_summary_table;
 use dirs::config_dir;
 use std::fs::File;
 use std::io::Read;
@@ -37,6 +40,31 @@ where
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
     let portfolio_config: PortfolioConfig = serde_json::from_str(&contents)?;
+
+    let client = Cryptowatch::new();
+    let summaries = client.market_summaries()?;
+    let exchange = "kraken";
+    let kraken = summaries
+        .get(exchange)
+        .ok_or::<Error>(ErrorKind::ExchangeNotFound(String::from(exchange)).into())?;
+
+    let pairs = portfolio_config
+        .portfolios
+        .iter()
+        .map(|e| e.crypto.to_string())
+        .map(|e| e.to_lowercase() + &portfolio_config.base_currency.to_string().to_lowercase())
+        .collect::<Vec<String>>();
+
+    let summaries: Vec<&MarketSummary> = pairs
+        .iter()
+        .map(|pair| {
+            kraken
+                .get(pair)
+                .ok_or::<Error>(ErrorKind::PairNotFound(pair.clone()).into())
+        })
+        .collect::<Result<_>>()?;
+
+    output_summary_table(summaries.as_slice());
 
     Ok(())
 }
