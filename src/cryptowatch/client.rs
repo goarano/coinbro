@@ -1,7 +1,7 @@
 use crate::cryptowatch::data::MarketSummary;
 use crate::cryptowatch::deserializer::{deserialize_market_summaries, deserialize_market_summary};
 use crate::cryptowatch::errors::Error;
-use crate::cryptowatch::rest::cryptowatch_get;
+use crate::cryptowatch::rest::{cryptowatch_get, cryptowatch_get_future};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -52,6 +52,7 @@ impl Cryptowatch {
         let url_str = self.url_builder("markets/summaries");
         let response = cryptowatch_get(&url_str)?;
         self.set_allowance(response.allowance.remaining);
+        cryptowatch_get_future();
         deserialize_market_summaries(response)
     }
 }
