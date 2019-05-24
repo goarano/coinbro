@@ -1,10 +1,12 @@
 use crate::cryptowatch::data::*;
 use futures::{stream, Future, Stream};
 //use hyper::{Client, Uri};
+use itertools::Itertools;
 use reqwest::r#async::{Chunk, Client, Response};
 use reqwest::{Error, IntoUrl};
 use std::sync::{Arc, Mutex};
 use tokio;
+use tokio::runtime::current_thread::Builder;
 
 pub fn cryptowatch_get<T>(url: T) -> Result<CryptowatchResponse, Error>
 where
@@ -15,29 +17,16 @@ where
     Ok(res_json)
 }
 
-/*
-pub fn cryptowatch_get_future() {
+pub fn cryptowatch_get_multiple<T>(urls: &[T])
+where
+    T: IntoUrl + AsRef<str> + Clone + Sync + 'static,
+{
     let client = Client::new();
-    let urls = vec!["url1", "url2"];
+    //let t = stream::iter_ok(urls);
     let bodies = stream::iter_ok(urls)
-        .map(move |url| {
+        .map(|url| {
             client
-                .get(Uri::from_static(url))
-                .and_then(|r| r.into_body().concat2())
-        })
-        .buffer_unordered(4);
-    let work = bodies.for_each(|p| println!("{:?}", p));
-    tokio::run(work);
-}
-*/
-
-pub fn cryptowatch_get_future() {
-    let client = Client::new();
-    let urls = vec!["https://www.cryptowat.ch", "https://goasdfasdfogle.com"];
-    let bodies = stream::iter_ok(urls)
-        .map(move |url| {
-            client
-                .get(url)
+                .get(url.clone())
                 .send()
                 .and_then(|r: Response| r.into_body().concat2().from_err())
         })
@@ -62,8 +51,19 @@ pub fn cryptowatch_get_future() {
             }
         });
 
-    tokio::run(work);
+    //let mut reactor = Core::new().unwrap();
+    //tokio::run(work);
+    let mut runtime = Builder::new().build().unwrap();
+    let run_res = runtime.block_on(work);
 
     let res = res_arc.lock().unwrap();
-    println!("{:?}", &res_arc);
+    debug!("res: {:?}", &res);
+
+    let res2 = res
+        .iter()
+        .map(|r| match r {
+            Ok(s) => serde_json::from_str::<CryptowatchResponse>(&s).map_err(|e| e.to_string()),
+            Err(e) => Err(e.clone()),
+        })
+        .collect::<Result<Vec<CryptowatchResponse>, String>>();
 }
