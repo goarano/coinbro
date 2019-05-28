@@ -1,9 +1,11 @@
 use crate::cryptowatch::data::*;
 use futures::{stream, Future, Stream};
 //use hyper::{Client, Uri};
-use itertools::Itertools;
+use crate::cryptowatch::errors::Error;
 use reqwest::r#async::{Chunk, Client, Response};
-use reqwest::{Error, IntoUrl};
+use reqwest::IntoUrl;
+use std::collections::HashMap;
+use std::hash::Hash;
 use std::sync::{Arc, Mutex};
 use tokio;
 use tokio::runtime::current_thread::Builder;
@@ -17,9 +19,9 @@ where
     Ok(res_json)
 }
 
-pub fn cryptowatch_get_multiple<T>(urls: &[T])
+pub fn cryptowatch_get_multiple<T>(urls: &[T]) -> HashMap<T, Result<CryptowatchResponse, Error>>
 where
-    T: IntoUrl + AsRef<str> + Clone + Sync + 'static,
+    T: IntoUrl + AsRef<str> + Clone + Eq + Hash,
 {
     let client = Client::new();
     //let t = stream::iter_ok(urls);
@@ -31,7 +33,7 @@ where
                 .and_then(|r: Response| r.into_body().concat2().from_err())
         })
         .buffer_unordered(4);
-    let res_arc = Arc::new(Mutex::new(Vec::<Result<String, String>>::new()));
+    let res_arc = Arc::new(Mutex::new(Vec::<Result<String, Error>>::new()));
     let work = bodies
         .for_each({
             let res = Arc::clone(&res_arc);
@@ -47,7 +49,7 @@ where
             let res = Arc::clone(&res_arc);
             move |e| {
                 println!("work not done: {}", e);
-                res.lock().unwrap().push(Err(e.to_string()));
+                res.lock().unwrap().push(Err(e.into()));
             }
         });
 
@@ -59,11 +61,15 @@ where
     let res = res_arc.lock().unwrap();
     debug!("res: {:?}", &res);
 
-    let res2 = res
+    let res2 = res.iter().map(|r: &Result<String, Error>| match r {
+        Ok(s) => serde_json::from_str::<CryptowatchResponse>(&s).map_err(|e| Error::from(e)),
+        Err(e) => Err(Error::from(e.to_string())), //TODO
+    });
+    let res3 = urls
         .iter()
-        .map(|r| match r {
-            Ok(s) => serde_json::from_str::<CryptowatchResponse>(&s).map_err(|e| e.to_string()),
-            Err(e) => Err(e.clone()),
-        })
-        .collect::<Result<Vec<CryptowatchResponse>, String>>();
+        .cloned()
+        .zip(res2)
+        .collect::<HashMap<T, Result<CryptowatchResponse, _>>>();
+
+    res3
 }
