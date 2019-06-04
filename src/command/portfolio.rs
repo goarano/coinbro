@@ -36,10 +36,7 @@ where
         ));
     }
 
-    let mut file = File::open(portfolio_config_file)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    let portfolio_config: PortfolioConfig = serde_json::from_str(&contents)?;
+    let portfolio_config = read_portfolio_config(portfolio_config_file)?;
 
     let client = Cryptowatch::new();
     let summaries = client.market_summaries()?;
@@ -67,4 +64,14 @@ where
     output_summary_table(summaries.as_slice());
 
     Ok(())
+}
+
+fn read_portfolio_config<F>(portfolio_config_file: F) -> Result<PortfolioConfig>
+where
+    F: AsRef<Path>,
+{
+    let mut file = File::open(portfolio_config_file)?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+    serde_json::from_str(&contents).map_err(Into::into)
 }
