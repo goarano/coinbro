@@ -21,14 +21,14 @@ where
 
 pub fn cryptowatch_get_multiple<T>(urls: &[T]) -> HashMap<T, Result<CryptowatchResponse, Error>>
 where
-    T: IntoUrl + AsRef<str> + Clone + Eq + Hash,
+    T: AsRef<str> + Clone + Eq + Hash,
 {
     let client = Client::new();
     //let t = stream::iter_ok(urls);
     let bodies = stream::iter_ok(urls)
         .map(|url| {
             client
-                .get(url.clone())
+                .get(url.as_ref())
                 .send()
                 .and_then(|r: Response| r.into_body().concat2().from_err())
         })

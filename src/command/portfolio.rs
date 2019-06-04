@@ -39,7 +39,7 @@ where
     let portfolio_config = read_portfolio_config(portfolio_config_file)?;
 
     let client = Cryptowatch::new();
-    let summaries = client.market_summaries()?;
+    let summaries = client.all_market_summaries()?;
     let exchange = "kraken";
     let kraken = summaries
         .get(exchange)

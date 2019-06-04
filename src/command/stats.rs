@@ -5,7 +5,7 @@ use itertools::Itertools;
 
 pub fn run() -> Result<()> {
     let client = Cryptowatch::new();
-    let summaries = client.market_summaries()?;
+    let summaries = client.all_market_summaries()?;
     let exchange = "kraken";
     let kraken = summaries
         .get(exchange)
