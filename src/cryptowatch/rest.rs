@@ -53,8 +53,6 @@ where
             }
         });
 
-    //let mut reactor = Core::new().unwrap();
-    //tokio::run(work);
     let mut runtime = Builder::new().build().unwrap();
     let run_res = runtime.block_on(work);
 

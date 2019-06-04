@@ -1,4 +1,5 @@
 extern crate clap;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate serde;
@@ -22,6 +23,10 @@ extern crate colored;
 #[macro_use]
 extern crate log;
 extern crate dirs;
+
+#[cfg(test)]
+#[macro_use]
+extern crate assert_json_diff;
 
 use clap::ArgMatches;
 use colored::Colorize;
