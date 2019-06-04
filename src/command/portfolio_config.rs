@@ -25,26 +25,28 @@ pub struct PortfolioEntry {
 #[serde(rename_all = "camelCase")]
 pub struct PortfolioConfig {
     /// desired currency by the user
-    #[serde(default = "default_quote_currency")]
+    #[serde(default = "PortfolioConfig::default_quote_currency")]
     pub quote_currency: Fiat,
     /// default exchange currency
-    #[serde(default = "default_base_currency")]
+    #[serde(default = "PortfolioConfig::default_base_currency")]
     pub base_currency: Fiat,
-    #[serde(default = "default_exchange")]
+    #[serde(default = "PortfolioConfig::default_exchange")]
     pub exchange: String,
     pub portfolios: Vec<PortfolioEntry>,
 }
 
-fn default_quote_currency() -> Fiat {
-    Fiat::CHF
-}
+impl PortfolioConfig {
+    pub fn default_quote_currency() -> Fiat {
+        Fiat::CHF
+    }
 
-fn default_base_currency() -> Fiat {
-    Fiat::EUR
-}
+    pub fn default_base_currency() -> Fiat {
+        Fiat::EUR
+    }
 
-fn default_exchange() -> String {
-    "kraken".to_string()
+    pub fn default_exchange() -> String {
+        "kraken".to_string()
+    }
 }
 
 #[cfg(test)]
@@ -53,7 +55,7 @@ mod test {
     use serde_json::Value;
 
     #[test]
-    fn test_portfolio_serialize_tester() {
+    fn test_portfolio_serialization() {
         let test_json = json!({
             "quoteCurrency": "CHF",
             "baseCurrency": "EUR",
@@ -81,8 +83,15 @@ mod test {
 
         let config: PortfolioConfig =
             serde_json::from_value(test_json).expect("serde_json deserialize error");
-        assert_eq!(config.quote_currency, default_quote_currency());
-        assert_eq!(config.base_currency, default_base_currency());
-        assert_eq!(config.exchange, String::from("kraken"));
+
+        assert_eq!(
+            config.quote_currency,
+            PortfolioConfig::default_quote_currency()
+        );
+        assert_eq!(
+            config.base_currency,
+            PortfolioConfig::default_base_currency()
+        );
+        assert_eq!(config.exchange, PortfolioConfig::default_exchange());
     }
 }
