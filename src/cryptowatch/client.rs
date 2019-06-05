@@ -1,10 +1,13 @@
 use crate::cryptowatch::data::MarketSummary;
-use crate::cryptowatch::deserializer::{deserialize_market_summaries, deserialize_market_summary};
-use crate::cryptowatch::errors::{Error, ErrorKind};
+use crate::cryptowatch::deserializer::{
+    deserialize_all_market_summaries, deserialize_market_summary,
+};
+use crate::cryptowatch::errors::Result;
 use crate::cryptowatch::rest::{cryptowatch_get, cryptowatch_get_multiple};
 use itertools::Itertools;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::hash::Hash;
 use std::rc::Rc;
 
 pub struct Cryptowatch {
@@ -33,7 +36,7 @@ impl Cryptowatch {
         );
     }
 
-    pub fn market_summary<T>(&self, market: T, pair: T) -> Result<MarketSummary, Error>
+    pub fn market_summary<T>(&self, market: T, pair: T) -> Result<MarketSummary>
     where
         T: AsRef<str>,
     {
@@ -50,9 +53,9 @@ impl Cryptowatch {
     pub fn market_summaries<T>(
         &self,
         market_pairs: &[(T, T)],
-    ) -> Result<HashMap<String, HashMap<String, MarketSummary>>, Error>
+    ) -> Result<HashMap<(T, T), MarketSummary>>
     where
-        T: AsRef<str>,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
         let urls = market_pairs
             .iter()
@@ -75,16 +78,26 @@ impl Cryptowatch {
                 .min()
                 .unwrap_or(0),
         );
-        //TODO
-        bail!(ErrorKind::Msg(String::from("I am just a placeholder")))
+
+        market_pairs
+            .iter()
+            .cloned()
+            .zip(response)
+            .map(|((market, pair), (_, result))| {
+                result
+                    .and_then(|response| {
+                        serde_json::from_value::<MarketSummary>(response.result).map_err(Into::into)
+                    })
+                    .map(|summary| ((market, pair), summary))
+                    .map_err(Into::into)
+            })
+            .collect()
     }
 
-    pub fn all_market_summaries(
-        &self,
-    ) -> Result<HashMap<String, HashMap<String, MarketSummary>>, Error> {
+    pub fn all_market_summaries(&self) -> Result<HashMap<String, HashMap<String, MarketSummary>>> {
         let url_str = self.url_builder("markets/summaries");
         let response = cryptowatch_get(&url_str)?;
         self.set_allowance(response.allowance.remaining);
-        deserialize_market_summaries(response)
+        deserialize_all_market_summaries(response)
     }
 }

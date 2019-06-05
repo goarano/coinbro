@@ -4,7 +4,7 @@ use itertools::Itertools;
 use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
 
-pub fn deserialize_market_summaries(
+pub fn deserialize_all_market_summaries(
     response: CryptowatchResponse,
 ) -> Result<HashMap<String, HashMap<String, MarketSummary>>> {
     let mut response_map: Map<String, Value> = response
@@ -115,7 +115,7 @@ mod test {
         )
         .unwrap();
 
-        let summaries_res = deserialize_market_summaries(response);
+        let summaries_res = deserialize_all_market_summaries(response);
         assert!(summaries_res.is_ok(), format!("{:?}", summaries_res));
 
         let summaries = summaries_res.unwrap();
