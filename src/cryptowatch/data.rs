@@ -12,13 +12,13 @@ pub struct CryptowatchResponse {
     pub allowance: Allowance,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct MarketPriceChange {
     pub percentage: f32,
     pub absolute: f32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct MarketPrice {
     pub last: f32,
     pub high: f32,
@@ -26,7 +26,7 @@ pub struct MarketPrice {
     pub change: MarketPriceChange,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MarketSummary {
     pub price: MarketPrice,

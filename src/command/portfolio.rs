@@ -2,8 +2,9 @@ use crate::command::portfolio_config::PortfolioConfig;
 use crate::cryptowatch::client::Cryptowatch;
 use crate::cryptowatch::data::MarketSummary;
 use crate::errors::{Error, ErrorKind, Result};
-use crate::output::output_summary_table;
+use crate::output::legacy_output_summary_table;
 use dirs::config_dir;
+use itertools::Itertools;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -52,16 +53,17 @@ where
         .map(|e| e.to_lowercase() + &portfolio_config.base_currency.to_string().to_lowercase())
         .collect::<Vec<String>>();
 
-    let summaries: Vec<&MarketSummary> = pairs
-        .iter()
+    let summaries: Vec<MarketSummary> = pairs
+        .into_iter()
         .map(|pair| {
             kraken
-                .get(pair)
+                .get(&pair)
+                .map(|s| (*s).clone())
                 .ok_or::<Error>(ErrorKind::PairNotFound(pair.clone()).into())
         })
         .collect::<Result<_>>()?;
 
-    output_summary_table(summaries.as_slice());
+    legacy_output_summary_table(summaries.as_slice());
 
     Ok(())
 }

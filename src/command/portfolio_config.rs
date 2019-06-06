@@ -1,19 +1,5 @@
+use crate::command::data::{Crypto, Fiat};
 use serde::Deserialize;
-
-#[derive(EnumString, EnumIter, Display, Debug, Serialize, Deserialize, Eq, PartialEq)]
-pub enum Fiat {
-    CHF,
-    USD,
-    EUR,
-}
-
-#[derive(EnumString, EnumIter, Display, Debug, Serialize, Deserialize, Eq, PartialEq)]
-pub enum Crypto {
-    BTC,
-    ETH,
-    ZEC,
-    XMR,
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PortfolioEntry {
@@ -52,7 +38,6 @@ impl PortfolioConfig {
 #[cfg(test)]
 mod test {
     use super::*;
-    use serde_json::Value;
 
     #[test]
     fn test_portfolio_serialization() {

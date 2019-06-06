@@ -1,6 +1,6 @@
 use crate::cryptowatch::client::Cryptowatch;
 use crate::errors::{Error, ErrorKind, Result};
-use crate::output::output_summary_table;
+use crate::output::legacy_output_summary_table;
 use itertools::Itertools;
 
 pub fn run() -> Result<()> {
@@ -14,8 +14,9 @@ pub fn run() -> Result<()> {
     let pair = "ethusd";
     let summary = kraken
         .get(pair)
+        .map(|s| (*s).clone())
         .ok_or::<Error>(ErrorKind::PairNotFound(String::from(pair)).into())?;
 
-    output_summary_table(&vec![summary]);
+    legacy_output_summary_table(&vec![summary]);
     Ok(())
 }
