@@ -1,13 +1,15 @@
+use crate::command::data::{Crypto, EitherFiatOrCrypto, Fiat};
 use crate::command::portfolio_config::PortfolioConfig;
 use crate::cryptowatch::client::Cryptowatch;
 use crate::cryptowatch::data::MarketSummary;
 use crate::errors::{Error, ErrorKind, Result};
 use crate::output::legacy_output_summary_table;
 use dirs::config_dir;
-use itertools::Itertools;
+use itertools::{Either, Itertools};
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 pub const PORTFOLIO_CONFIG_FILE_DIR: &str = "coinbro";
 pub const PORTFOLIO_CONFIG_FILE_NAME: &str = "config.json";
@@ -52,6 +54,20 @@ where
         .map(|e| e.crypto.to_string())
         .map(|e| e.to_lowercase() + &portfolio_config.base_currency.to_string().to_lowercase())
         .collect::<Vec<String>>();
+
+    let either_pairs = portfolio_config
+        .portfolios
+        .iter()
+        .map(|e| Crypto::from_str(&e.crypto.to_string().to_uppercase()))
+        .map_results(|c: Crypto| EitherFiatOrCrypto::Crypto(c))
+        .filter_map(|r| match r {
+            Ok(efoc) => Some(efoc),
+            Err(e) => {
+                warn!("{}", e); //TODO better logging?
+                None
+            }
+        })
+        .collect_vec();
 
     let summaries: Vec<MarketSummary> = pairs
         .into_iter()
