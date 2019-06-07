@@ -1,15 +1,16 @@
-use crate::command::data::{Crypto, EitherFiatOrCrypto, Fiat};
+use crate::command::data::{Crypto, EitherFiatOrCrypto};
 use crate::command::portfolio_config::PortfolioConfig;
 use crate::cryptowatch::client::Cryptowatch;
 use crate::cryptowatch::data::MarketSummary;
 use crate::errors::{Error, ErrorKind, Result};
-use crate::output::legacy_output_summary_table;
+use crate::output::{legacy_output_summary_table, output_summary_table};
 use dirs::config_dir;
-use itertools::{Either, Itertools};
+use itertools::Itertools;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::string::ToString;
 
 pub const PORTFOLIO_CONFIG_FILE_DIR: &str = "coinbro";
 pub const PORTFOLIO_CONFIG_FILE_NAME: &str = "config.json";
@@ -55,6 +56,25 @@ where
         .map(|e| e.to_lowercase() + &portfolio_config.base_currency.to_string().to_lowercase())
         .collect::<Vec<String>>();
 
+    let summaries: Vec<(String, MarketSummary)> = pairs
+        .into_iter()
+        .map(|pair| {
+            kraken
+                .get(&pair)
+                .map(|s| (*s).clone())
+                .ok_or::<Error>(ErrorKind::PairNotFound(pair.clone()).into())
+                .map(|s| (pair, s))
+        })
+        .collect::<Result<Vec<(String, MarketSummary)>>>()?;
+
+    legacy_output_summary_table(
+        summaries
+            .into_iter()
+            .map(|(_, summary)| summary)
+            .collect_vec()
+            .as_slice(),
+    );
+
     let either_pairs = portfolio_config
         .portfolios
         .iter()
@@ -63,23 +83,39 @@ where
         .filter_map(|r| match r {
             Ok(efoc) => Some(efoc),
             Err(e) => {
-                warn!("{}", e); //TODO better logging?
+                warn!("PortfolioConfig problem: {}", e); //TODO better logging?
                 None
             }
         })
-        .collect_vec();
-
-    let summaries: Vec<MarketSummary> = pairs
-        .into_iter()
-        .map(|pair| {
-            kraken
-                .get(&pair)
-                .map(|s| (*s).clone())
-                .ok_or::<Error>(ErrorKind::PairNotFound(pair.clone()).into())
+        .map(|c| {
+            let from = match c {
+                EitherFiatOrCrypto::Crypto(crypto) => crypto.to_string(),
+                EitherFiatOrCrypto::Fiat(coin) => coin.to_string(),
+            }
+            .to_lowercase();
+            let to = portfolio_config.base_currency.to_string().to_lowercase();
+            (from, to)
         })
-        .collect::<Result<_>>()?;
+        .collect::<Vec<(String, String)>>();
 
-    legacy_output_summary_table(summaries.as_slice());
+    let request_pairs = either_pairs
+        .into_iter()
+        .map(|(from, to)| {
+            //TODO this has to be improved
+            (String::from("kraken"), from + &to)
+        })
+        .collect::<Vec<(String, String)>>();
+
+    let either_summaries = client.market_summaries(&request_pairs)?;
+    let printing_stuff = either_summaries
+        .into_iter()
+        .map(|((_, pair), summary)| {
+            let from = String::from(pair.get(0..3).unwrap());
+            let to = String::from(pair.get(3..6).unwrap());
+            ((from, to), summary)
+        })
+        .collect_vec();
+    output_summary_table(&printing_stuff);
 
     Ok(())
 }

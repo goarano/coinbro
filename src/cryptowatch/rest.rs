@@ -1,7 +1,7 @@
 use crate::cryptowatch::data::*;
 use futures::{stream, Future, Stream};
 //use hyper::{Client, Uri};
-use crate::cryptowatch::errors::Error;
+use crate::cryptowatch::errors::Result;
 use reqwest::r#async::{Chunk, Client, Response};
 use reqwest::IntoUrl;
 use std::collections::HashMap;
@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 use tokio;
 use tokio::runtime::current_thread::Builder;
 
-pub fn cryptowatch_get<T>(url: T) -> Result<CryptowatchResponse, Error>
+pub fn cryptowatch_get<T>(url: T) -> Result<CryptowatchResponse>
 where
     T: IntoUrl + AsRef<str>,
 {
@@ -19,7 +19,7 @@ where
     Ok(res_json)
 }
 
-pub fn cryptowatch_get_multiple<T>(urls: &[T]) -> HashMap<T, Result<CryptowatchResponse, Error>>
+pub fn cryptowatch_get_multiple<T>(urls: &[T]) -> HashMap<T, Result<CryptowatchResponse>>
 where
     T: AsRef<str> + Clone + Eq + Hash,
 {
@@ -33,7 +33,7 @@ where
                 .and_then(|r: Response| r.into_body().concat2().from_err())
         })
         .buffer_unordered(4);
-    let res_arc = Arc::new(Mutex::new(Vec::<Result<String, Error>>::new()));
+    let res_arc = Arc::new(Mutex::new(Vec::<Result<String>>::new()));
     let work = bodies
         .for_each({
             let res = Arc::clone(&res_arc);
@@ -54,20 +54,20 @@ where
         });
 
     let mut runtime = Builder::new().build().unwrap();
-    let run_res = runtime.block_on(work);
+    let _run_res = runtime.block_on(work);
 
-    let res = res_arc.lock().unwrap();
+    let res = Arc::try_unwrap(res_arc).unwrap().into_inner().unwrap(); // This cannot possibly fail
     debug!("res: {:?}", &res);
 
-    let res2 = res.iter().map(|r: &Result<String, Error>| match r {
-        Ok(s) => serde_json::from_str::<CryptowatchResponse>(&s).map_err(|e| Error::from(e)),
-        Err(e) => Err(Error::from(e.to_string())), //TODO
-    });
-    let res3 = urls
-        .iter()
+    urls.iter()
         .cloned()
-        .zip(res2)
-        .collect::<HashMap<T, Result<CryptowatchResponse, _>>>();
-
-    res3
+        .zip(res.into_iter().map(|r| {
+            r.and_then(|s| {
+                println!("toparse: {:?}", &s);
+                //TODO error handling eg. for
+                // "{\"error\":\"Exchange not found\",\"allowance\":{\"cost\":3167051,\"remaining\":6883695512}}\n"
+                serde_json::from_str::<CryptowatchResponse>(&s).map_err(Into::into)
+            })
+        }))
+        .collect::<HashMap<T, Result<CryptowatchResponse>>>()
 }

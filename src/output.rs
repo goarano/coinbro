@@ -26,6 +26,33 @@ pub fn legacy_output_summary_table(summaries: &[MarketSummary]) {
     table.printstd();
 }
 
+pub fn output_summary_table<T>(pair_summaries: &[((T, T), MarketSummary)])
+where
+    T: AsRef<str>,
+    //T: ToString,
+{
+    // Create the table
+    let mut table = Table::new();
+
+    table.set_titles(row![
+        "from",
+        "to",
+        "last",
+        "high",
+        "low",
+        "change",
+        "change (%)",
+        "volume",
+        "volume quote"
+    ]);
+
+    pair_summaries
+        .iter()
+        .for_each(|((from, to), summary)| add_table_entry_summary(&mut table, from, to, summary));
+
+    table.printstd();
+}
+
 fn add_table_entry_summary<S>(table: &mut Table, from: S, to: S, summary: &MarketSummary)
 where
     S: AsRef<str>,

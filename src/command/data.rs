@@ -1,5 +1,4 @@
 use serde::Deserialize;
-use serde_json::Value;
 
 #[derive(Display, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum EitherFiatOrCrypto {

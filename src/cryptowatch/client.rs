@@ -57,16 +57,18 @@ impl Cryptowatch {
     where
         T: AsRef<str> + Clone + Eq + Hash,
     {
+        //TODO market name validation?
         let urls = market_pairs
             .iter()
             .map(|(market, pair)| {
                 self.url_builder(format!(
                     "markets/{}/{}/summary",
-                    market.as_ref(),
-                    pair.as_ref()
+                    market.as_ref().to_lowercase(),
+                    pair.as_ref().to_lowercase()
                 ))
             })
             .collect_vec();
+        debug!("URLs to request: {:?}", urls);
         let response = cryptowatch_get_multiple(&urls);
         self.set_allowance(
             response
