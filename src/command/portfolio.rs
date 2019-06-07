@@ -130,3 +130,119 @@ where
     file.read_to_string(&mut contents)?;
     serde_json::from_str(&contents).map_err(Into::into)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test::Bencher;
+
+    #[bench]
+    pub fn bench_config_market_summaries(b: &mut Bencher) {
+        b.iter(|| {
+            let portfolio_config_file = config_dir()
+                .and_then(|p| {
+                    p.join(Path::new(PORTFOLIO_CONFIG_FILE_DIR))
+                        .join(Path::new(PORTFOLIO_CONFIG_FILE_NAME))
+                        .into_os_string()
+                        .into_string()
+                        .ok()
+                })
+                .map(PathBuf::from)
+                .unwrap();
+
+            let portfolio_config = read_portfolio_config(portfolio_config_file).unwrap();
+
+            let client = Cryptowatch::new();
+            let summaries = client.all_market_summaries().unwrap();
+            let exchange = "kraken";
+            let kraken = summaries
+                .get(exchange)
+                .ok_or::<Error>(ErrorKind::ExchangeNotFound(String::from(exchange)).into())
+                .unwrap();
+
+            let pairs = portfolio_config
+                .portfolios
+                .iter()
+                .map(|e| e.crypto.to_string())
+                .map(|e| {
+                    e.to_lowercase() + &portfolio_config.base_currency.to_string().to_lowercase()
+                })
+                .collect::<Vec<String>>();
+
+            let summaries: Vec<(String, MarketSummary)> = pairs
+                .into_iter()
+                .map(|pair| {
+                    kraken
+                        .get(&pair)
+                        .map(|s| (*s).clone())
+                        .ok_or::<Error>(ErrorKind::PairNotFound(pair.clone()).into())
+                        .map(|s| (pair, s))
+                })
+                .collect::<Result<Vec<(String, MarketSummary)>>>()
+                .unwrap();
+        });
+    }
+
+    #[bench]
+    pub fn bench_config_market_summaries_multiple(b: &mut Bencher) {
+        b.iter(|| {
+            let portfolio_config_file = config_dir()
+                .and_then(|p| {
+                    p.join(Path::new(PORTFOLIO_CONFIG_FILE_DIR))
+                        .join(Path::new(PORTFOLIO_CONFIG_FILE_NAME))
+                        .into_os_string()
+                        .into_string()
+                        .ok()
+                })
+                .map(PathBuf::from)
+                .unwrap();
+
+            let portfolio_config = read_portfolio_config(portfolio_config_file).unwrap();
+
+            let client = Cryptowatch::new();
+
+            let mut either_pairs = portfolio_config
+                .portfolios
+                .iter()
+                .map(|e| Crypto::from_str(&e.crypto.to_string().to_uppercase()))
+                .map_results(|c: Crypto| EitherFiatOrCrypto::Crypto(c))
+                .filter_map(|r| match r {
+                    Ok(efoc) => Some(efoc),
+                    Err(e) => {
+                        warn!("PortfolioConfig problem: {}", e); //TODO better logging?
+                        None
+                    }
+                })
+                .map(|c| {
+                    let from = match c {
+                        EitherFiatOrCrypto::Crypto(crypto) => crypto.to_string(),
+                        EitherFiatOrCrypto::Fiat(coin) => coin.to_string(),
+                    }
+                    .to_lowercase();
+                    let to = portfolio_config.base_currency.to_string().to_lowercase();
+                    (from, to)
+                })
+                .collect::<Vec<(String, String)>>();
+            either_pairs.sort();
+
+            let request_pairs = either_pairs
+                .into_iter()
+                .map(|(from, to)| {
+                    //TODO this has to be improved
+                    (String::from("kraken"), from + &to)
+                })
+                .collect::<Vec<(String, String)>>();
+
+            let either_summaries = client.market_summaries(&request_pairs).unwrap();
+            let printing_stuff = either_summaries
+                .into_iter()
+                .map(|((_, pair), summary)| {
+                    let from = String::from(pair.get(0..3).unwrap());
+                    let to = String::from(pair.get(3..6).unwrap());
+                    ((from, to), summary)
+                })
+                .collect_vec();
+            output_summary_table(&printing_stuff);
+        });
+    }
+}

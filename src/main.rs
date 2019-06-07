@@ -1,3 +1,8 @@
+#![feature(test)]
+
+extern crate test;
+//TODO maybe remove
+
 extern crate clap;
 #[macro_use]
 extern crate serde_json;
