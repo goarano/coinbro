@@ -1,7 +1,6 @@
 use crate::cryptowatch::data::*;
+use crate::cryptowatch::errors::{ErrorKind, Result};
 use futures::{stream, Future, Stream};
-//use hyper::{Client, Uri};
-use crate::cryptowatch::errors::Result;
 use reqwest::r#async::{Chunk, Client, Response};
 use reqwest::IntoUrl;
 use std::collections::HashMap;
@@ -19,7 +18,26 @@ where
     Ok(res_json)
 }
 
-pub fn cryptowatch_get_multiple<T>(urls: &[T]) -> HashMap<T, Result<CryptowatchResponse>>
+pub fn cryptowatch_get_multiple<T>(urls: &[T]) -> Vec<(T, Result<CryptowatchResponse>)>
+where
+    T: AsRef<str> + Clone + Eq + Hash,
+{
+    let mut response_map = cryptowatch_get_multiple_map(urls);
+    urls.iter()
+        .map(|url| {
+            let response = match response_map.remove(url) {
+                Some(result) => result,
+                None => Err(
+                    ErrorKind::Msg(format!("{} not found in response map", url.as_ref())).into(),
+                ),
+            };
+
+            (url.clone(), response)
+        })
+        .collect()
+}
+
+pub fn cryptowatch_get_multiple_map<T>(urls: &[T]) -> HashMap<T, Result<CryptowatchResponse>>
 where
     T: AsRef<str> + Clone + Eq + Hash,
 {
@@ -38,7 +56,7 @@ where
         .for_each({
             let res = Arc::clone(&res_arc);
             move |p: Chunk| {
-                println!("work done: {:?}", &p);
+                debug!("work done: {:?}", &p);
                 let v = p.to_vec();
                 let b = String::from_utf8_lossy(&v).to_string();
                 res.lock().unwrap().push(Ok(b));
@@ -63,11 +81,10 @@ where
         .cloned()
         .zip(res.into_iter().map(|r| {
             r.and_then(|s| {
-                println!("toparse: {:?}", &s);
                 //TODO error handling eg. for
                 // "{\"error\":\"Exchange not found\",\"allowance\":{\"cost\":3167051,\"remaining\":6883695512}}\n"
                 serde_json::from_str::<CryptowatchResponse>(&s).map_err(Into::into)
             })
         }))
-        .collect::<HashMap<T, Result<CryptowatchResponse>>>()
+        .collect()
 }

@@ -3,7 +3,9 @@ use crate::cryptowatch::deserializer::{
     deserialize_all_market_summaries, deserialize_market_summary,
 };
 use crate::cryptowatch::errors::Result;
-use crate::cryptowatch::rest::{cryptowatch_get, cryptowatch_get_multiple};
+use crate::cryptowatch::rest::{
+    cryptowatch_get, cryptowatch_get_multiple, cryptowatch_get_multiple_map,
+};
 use itertools::Itertools;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -53,7 +55,7 @@ impl Cryptowatch {
     pub fn market_summaries<T>(
         &self,
         market_pairs: &[(T, T)],
-    ) -> Result<HashMap<(T, T), MarketSummary>>
+    ) -> Result<Vec<((T, T), MarketSummary)>>
     where
         T: AsRef<str> + Clone + Eq + Hash,
     {
@@ -69,11 +71,11 @@ impl Cryptowatch {
             })
             .collect_vec();
         debug!("URLs to request: {:?}", urls);
-        let response = cryptowatch_get_multiple(&urls);
+        let responses = cryptowatch_get_multiple(&urls);
         self.set_allowance(
-            response
-                .values()
-                .filter_map(|v| match v {
+            responses
+                .iter()
+                .filter_map(|(_, r)| match r {
                     Ok(r) => Some(r.allowance.remaining),
                     Err(_) => None,
                 })
@@ -84,7 +86,7 @@ impl Cryptowatch {
         market_pairs
             .iter()
             .cloned()
-            .zip(response)
+            .zip(responses.into_iter())
             .map(|((market, pair), (_, result))| {
                 result
                     .and_then(|response| {

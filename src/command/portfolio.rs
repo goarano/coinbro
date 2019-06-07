@@ -75,7 +75,7 @@ where
             .as_slice(),
     );
 
-    let either_pairs = portfolio_config
+    let mut either_pairs = portfolio_config
         .portfolios
         .iter()
         .map(|e| Crypto::from_str(&e.crypto.to_string().to_uppercase()))
@@ -97,6 +97,7 @@ where
             (from, to)
         })
         .collect::<Vec<(String, String)>>();
+    either_pairs.sort();
 
     let request_pairs = either_pairs
         .into_iter()
